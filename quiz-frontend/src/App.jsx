@@ -1,87 +1,111 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+
+// An array of quiz categories for the user to choose from
+const categories = [
+  'Java', 'C', 'C++', 'JavaScript', 'React', 'Node.js', 'SQL', 'Python', 'Spring Boot', 'Data Structures', 'Git', 'HTML & CSS'
+];
 
 function App() {
-  // State to manage the application's flow and data
+  // New state to manage the view: 'category-select', 'loading', 'in-progress', 'finished', 'error'
+  const [gameState, setGameState] = useState('category-select');
+
+  // Existing state variables
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
-  // 'loading', 'in-progress', 'finished', 'error'
-  const [quizState, setQuizState] = useState('loading');
   const [error, setError] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('');
 
-  // Function to fetch quiz questions from the Spring Boot backend
-  const fetchQuestions = async () => {
-    setQuizState('loading');
+  // Updated function to fetch questions for a specific category
+  const fetchQuestions = async (category) => {
+    setGameState('loading');
     setError(null);
     try {
-      // The backend is running on port 8080 by default
-      const response = await fetch('http://localhost:8081/api/quiz/generate');
+      const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/quiz/generate/${category}`;
+      const response = await fetch(apiUrl);
       if (!response.ok) {
-        throw new Error('Failed to fetch questions. Is the backend server running?');
+        throw new Error(`Failed to fetch questions. Is the backend server running? (Status: ${response.status})`);
       }
       const data = await response.json();
       if (!data || data.length === 0) {
-        throw new Error('No questions received from the server.');
+        throw new Error('No questions received. The API may be rate-limited or the category is invalid.');
       }
       setQuestions(data);
-      setQuizState('in-progress');
+      setGameState('in-progress');
     } catch (err) {
       console.error(err);
       setError(err.message);
-      setQuizState('error');
+      setGameState('error');
     }
   };
 
-  // Fetch questions when the component first mounts
-  useEffect(() => {
-    fetchQuestions();
-  }, []);
+  // Handler for when a user selects a category
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    fetchQuestions(category);
+  };
 
-  // Function to handle when a user selects an answer
+  // Handler for selecting an answer
   const handleAnswerSelect = (option) => {
     setSelectedAnswer(option);
   };
 
-  // Function to move to the next question or finish the quiz
+  // Handler for moving to the next question or finishing
   const handleNextQuestion = () => {
-    // Check if the selected answer is correct and update the score
     if (selectedAnswer === questions[currentQuestionIndex].correctAnswer) {
       setScore(prevScore => prevScore + 1);
     }
-
-    // Reset selected answer for the next question
     setSelectedAnswer(null);
 
-    // Move to the next question or finish the quiz
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prevIndex => prevIndex + 1);
     } else {
-      setQuizState('finished');
+      setGameState('finished');
     }
   };
 
-  // Function to restart the quiz
-  const handleRestartQuiz = () => {
-    // Reset all state variables to their initial values
+  // Resets all state to go back to the category selection screen
+  const handleBackToMenu = () => {
+    setGameState('category-select');
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     setScore(0);
     setQuestions([]);
-    // Fetch a new set of questions
-    fetchQuestions();
+    setSelectedCategory('');
   };
 
-  // --- Render Functions for Different States ---
+  // --- UI Rendering Logic ---
 
+  // Renders the initial category selection screen
+  const renderCategorySelector = () => (
+    <div className="text-center">
+      <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Select a Quiz Category</h1>
+      <p className="text-center text-gray-500 mb-8">Choose a topic to test your knowledge.</p>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {categories.map(category => (
+          <button
+            key={category}
+            onClick={() => handleCategorySelect(category)}
+            className="p-4 bg-indigo-600 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-700 transform hover:scale-105 transition-transform duration-200"
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Renders the loading spinner
   const renderLoading = () => (
     <div className="text-center p-8">
       <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-      <p className="text-xl font-semibold text-gray-700">Generating your quiz...</p>
+      <p className="text-xl font-semibold text-gray-700">Generating your {selectedCategory} quiz...</p>
       <p className="text-gray-500">Please wait a moment.</p>
     </div>
   );
 
+  // Renders an error message
   const renderError = () => (
     <div className="text-center p-8 bg-red-50 rounded-lg border border-red-200">
       <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -90,14 +114,15 @@ function App() {
       <h2 className="text-2xl font-bold text-red-700 mb-2">An Error Occurred</h2>
       <p className="text-red-600 mb-4">{error}</p>
       <button
-        onClick={handleRestartQuiz}
-        className="px-6 py-2 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75 transition-colors"
+        onClick={handleBackToMenu}
+        className="px-6 py-2 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 focus:outline-none"
       >
-        Try Again
+        Try a Different Category
       </button>
     </div>
   );
 
+  // Renders the active quiz interface
   const renderQuiz = () => {
     if (questions.length === 0) return null;
     const currentQuestion = questions[currentQuestionIndex];
@@ -105,7 +130,7 @@ function App() {
       <>
         <div className="mb-6">
           <p className="text-sm font-medium text-gray-500">
-            Question {currentQuestionIndex + 1} of {questions.length}
+            Question {currentQuestionIndex + 1} of {questions.length} | Topic: {selectedCategory}
           </p>
           <h2 className="text-2xl font-bold text-gray-800 mt-1">{currentQuestion.question}</h2>
         </div>
@@ -136,36 +161,50 @@ function App() {
     );
   };
 
+  // Renders the final score screen
   const renderFinished = () => (
     <div className="text-center p-8">
       <h2 className="text-4xl font-extrabold text-gray-800 mb-2">Quiz Completed!</h2>
+      <p className="text-lg text-gray-500 mb-4">Topic: {selectedCategory}</p>
       <p className="text-xl text-gray-600 mb-6">
         Your final score is:
         <span className="font-bold text-blue-600 text-3xl block mt-2">{score} / {questions.length}</span>
       </p>
       <button
-        onClick={handleRestartQuiz}
-        className="px-8 py-3 bg-green-500 text-white font-bold rounded-lg shadow-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 transform hover:scale-105 transition-transform"
+        onClick={handleBackToMenu}
+        className="px-8 py-3 bg-green-500 text-white font-bold rounded-lg shadow-lg hover:bg-green-600 transform hover:scale-105 transition-transform"
       >
-        Take a New Quiz
+        Choose New Category
       </button>
     </div>
   );
 
+  // Main render function that decides which component to show
+  const renderContent = () => {
+    switch (gameState) {
+      case 'category-select':
+        return renderCategorySelector();
+      case 'loading':
+        return renderLoading();
+      case 'in-progress':
+        return renderQuiz();
+      case 'finished':
+        return renderFinished();
+      case 'error':
+        return renderError();
+      default:
+        return renderCategorySelector();
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-2">Google API Quiz</h1>
-        <p className="text-center text-gray-500 mb-8">Test your knowledge with AI-generated questions.</p>
-        <div className="border-t border-gray-200 pt-6">
-          {quizState === 'loading' && renderLoading()}
-          {quizState === 'error' && renderError()}
-          {quizState === 'in-progress' && renderQuiz()}
-          {quizState === 'finished' && renderFinished()}
-        </div>
+        {renderContent()}
       </div>
     </div>
   );
 }
 
 export default App;
+
