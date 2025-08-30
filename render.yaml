@@ -1,0 +1,41 @@
+# render.yaml - Configuration file for deploying to Render
+# This file defines two services: the Spring Boot backend and the React frontend.
+
+services:
+  # -----------------
+  # Spring Boot Backend Service
+  # -----------------
+  - type: web
+    name: ai-quiz-backend
+    # Explicitly set the runtime to Java
+    runtime: java
+    # Set the root directory for this service
+    rootDir: ai-quiz
+    plan: free
+    buildCommand: "./mvnw clean install"
+    startCommand: "java -jar target/ai-quiz-0.0.1-SNAPSHOT.jar"
+    envVars:
+      - key: GOOGLE_API_KEY
+        # This tells Render to get the key from your account's secret store
+        fromSecret: GOOGLE_API_KEY
+      # Set the server port, matching your application.properties
+      - key: PORT
+        value: 8081
+
+  # -----------------
+  # React Frontend Service
+  # -----------------
+  - type: web
+    name: quiz-frontend
+    # Explicitly set the runtime to Node
+    runtime: node
+    # Set the root directory for this service
+    rootDir: quiz-frontend
+    plan: free
+    buildCommand: "npm install && npm run build"
+    # The directory where the built static files are located
+    publishDirectory: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        # This special value automatically uses the URL of your deployed backend
+        value: https://${ai-quiz-backend.host}/api
