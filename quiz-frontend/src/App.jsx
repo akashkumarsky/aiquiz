@@ -16,7 +16,7 @@ function App() {
     setError(null);
     try {
       // The backend is running on port 8080 by default
-      const response = await fetch('http://localhost:8080/api/quiz/generate');
+      const response = await fetch('http://localhost:8081/api/quiz/generate');
       if (!response.ok) {
         throw new Error('Failed to fetch questions. Is the backend server running?');
       }
@@ -115,8 +115,8 @@ function App() {
               key={index}
               onClick={() => handleAnswerSelect(option)}
               className={`p-4 border rounded-lg text-left transition-all duration-200 ${selectedAnswer === option
-                  ? 'bg-blue-500 text-white border-blue-600 ring-2 ring-blue-300'
-                  : 'bg-white hover:bg-gray-100 border-gray-300'
+                ? 'bg-blue-500 text-white border-blue-600 ring-2 ring-blue-300'
+                : 'bg-white hover:bg-gray-100 border-gray-300'
                 }`}
             >
               {option}

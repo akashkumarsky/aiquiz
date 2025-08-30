@@ -1,33 +1,49 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+#=========================================
+#Spring Boot / Maven Backend (ai-quiz)
+#=========================================
+#Compiled class files and build outputs
+/ai-quiz/target/
+/ai-quiz/.mvn/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+#Log files
+*.log
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
+#IDE files (IntelliJ, Eclipse/STS, VSCode)
+/ai-quiz/.idea/
+/ai-quiz/*.iml
+/ai-quiz/.classpath
+/ai-quiz/.project
+/ai-quiz/.settings/
+/ai-quiz/.vscode/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+#IMPORTANT: Ignore the properties file to protect your API key
+/ai-quiz/src/main/resources/application.properties
 
-### VS Code ###
-.vscode/
+#=========================================
+#React / Vite Frontend (quiz-frontend)
+#=========================================
+#Dependencies and build outputs
+/quiz-frontend/node_modules/
+/quiz-frontend/dist/
+/quiz-frontend/dist-ssr/
+
+#Log files
+/quiz-frontend/npm-debug.log*
+/quiz-frontend/yarn-debug.log*
+/quiz-frontend/yarn-error.log*
+/quiz-frontend/pnpm-debug.log*
+/quiz-frontend/lerna-debug.log*
+
+#IMPORTANT: Ignore environment files to protect secrets
+/quiz-frontend/.env
+/quiz-frontend/.env.local
+/quiz-frontend/.env.*.local
+
+#IDE and editor files
+/quiz-frontend/.idea/
+/quiz-frontend/.vscode/
+/quiz-frontend/.suo
+/quiz-frontend/.ntvs*
+/quiz-frontend/.njsproj
+/quiz-frontend/.sln
+/quiz-frontend/*.sw?
