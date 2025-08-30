@@ -29,17 +29,18 @@ public class QuizController {
     }
 
     /**
-     * UPDATED Endpoint: Generates quiz questions based on a specific category.
-     * The category is passed as a path variable.
-     * @param category The topic for the quiz questions (e.g., "Java", "React").
+     * UPDATED Endpoint: Generates quiz questions based on a category AND difficulty.
+     * Both are passed as path variables.
+     * @param category The topic for the quiz questions (e.g., "Java").
+     * @param difficulty The difficulty level (e.g., "Beginner").
      * @return A Mono wrapping a list of 10 QuizQuestion objects.
      */
-    @GetMapping("/generate/{category}")
-    public Mono<List<QuizQuestion>> generateQuiz(@PathVariable String category) {
+    @GetMapping("/generate/{category}/{difficulty}")
+    public Mono<List<QuizQuestion>> generateQuiz(@PathVariable String category, @PathVariable String difficulty) {
 
-        // The prompt is now dynamic and includes the selected category and requests 10 questions.
+        // The prompt now includes both the category and the selected difficulty level.
         String prompt = String.format(
-            "Generate 10 multiple-choice quiz questions about '%s'. " +
+            "Generate 10 multiple-choice quiz questions about '%s' for a '%s' level developer. " +
             "Provide the response as a valid JSON array. Each object in the array should have the " +
             "following exact keys: \"question\", \"options\", and \"correctAnswer\". " +
             "\"options\" should be an array of 4 strings. " +
@@ -47,7 +48,7 @@ public class QuizController {
             "\"correctAnswer\" should be a string that exactly matches one of the items in the \"options\" array. " +
             "Do not include any introductory text, markdown formatting, or code fences in your response. " +
             "The entire response should be only the JSON array.",
-            category // Inject the category into the prompt
+            category, difficulty // Inject both variables into the prompt
         );
 
         var requestBody = new GeminiDtos.GeminiRequest(
@@ -66,9 +67,9 @@ public class QuizController {
                     return objectMapper.readValue(jsonText, new TypeReference<List<QuizQuestion>>() {});
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
-                    // In case of an error, it's better to throw an exception that can be handled globally
                     throw new RuntimeException("Failed to parse quiz questions from AI response.", e);
                 }
             });
     }
 }
+
