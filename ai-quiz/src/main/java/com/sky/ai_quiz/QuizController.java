@@ -12,7 +12,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/quiz")
-@CrossOrigin(origins = "http://localhost:5173")
+// IMPORTANT: Changed to allow requests from any origin for deployment.
+@CrossOrigin(origins = "*") 
 public class QuizController {
 
     private final WebClient webClient;
@@ -27,18 +28,10 @@ public class QuizController {
     public QuizController(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
     }
-
-    /**
-     * UPDATED Endpoint: Generates quiz questions based on a category AND difficulty.
-     * Both are passed as path variables.
-     * @param category The topic for the quiz questions (e.g., "Java").
-     * @param difficulty The difficulty level (e.g., "Beginner").
-     * @return A Mono wrapping a list of 10 QuizQuestion objects.
-     */
+    
     @GetMapping("/generate/{category}/{difficulty}")
     public Mono<List<QuizQuestion>> generateQuiz(@PathVariable String category, @PathVariable String difficulty) {
 
-        // The prompt now includes both the category and the selected difficulty level.
         String prompt = String.format(
             "Generate 10 multiple-choice quiz questions about '%s' for a '%s' level developer. " +
             "Provide the response as a valid JSON array. Each object in the array should have the " +
@@ -48,7 +41,7 @@ public class QuizController {
             "\"correctAnswer\" should be a string that exactly matches one of the items in the \"options\" array. " +
             "Do not include any introductory text, markdown formatting, or code fences in your response. " +
             "The entire response should be only the JSON array.",
-            category, difficulty // Inject both variables into the prompt
+            category, difficulty
         );
 
         var requestBody = new GeminiDtos.GeminiRequest(
