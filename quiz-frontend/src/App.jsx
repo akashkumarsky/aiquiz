@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // <-- 1. IMPORT useEffect
 
 const categories = [
   'Java', 'C', 'C++', 'JavaScript', 'React', 'Node.js', 'SQL', 'Python', 'Spring Boot', 'Data Structures', 'Git', 'HTML & CSS'
@@ -32,9 +32,9 @@ const Stepper = ({ current, total }) => {
             {/* Step circle */}
             <div
               className={`relative flex items-center justify-center 
-              w-10 h-10 md:w-12 md:h-12 rounded-full font-bold text-sm md:text-base
-              transition-all duration-300
-              ${isCompleted
+               w-10 h-10 md:w-12 md:h-12 rounded-full font-bold text-sm md:text-base
+               transition-all duration-300
+               ${isCompleted
                   ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md"
                   : isActive
                     ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white scale-110 shadow-lg ring-4 ring-indigo-200"
@@ -48,7 +48,7 @@ const Stepper = ({ current, total }) => {
             {index < steps.length - 1 && (
               <div
                 className={`flex-1 h-1 mx-2 rounded-full transition-all duration-500 
-                ${isCompleted ? "bg-green-500" : "bg-gray-300"}`}
+               ${isCompleted ? "bg-green-500" : "bg-gray-300"}`}
               />
             )}
           </React.Fragment>
@@ -68,6 +68,32 @@ function App() {
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
+  
+  // <-- 2. ADD STOPWATCH STATE -->
+  const [time, setTime] = useState(0);
+  const [timerOn, setTimerOn] = useState(false);
+
+  // <-- 3. ADD useEffect FOR TIMER LOGIC -->
+  useEffect(() => {
+    let interval = null;
+
+    if (timerOn) {
+      interval = setInterval(() => {
+        setTime(prevTime => prevTime + 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, [timerOn]);
+
+  // <-- 4. HELPER FUNCTION TO FORMAT TIME -->
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
   const fetchQuestions = async (category, difficulty) => {
     setGameState('loading');
@@ -78,8 +104,13 @@ function App() {
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const data = await response.json();
       if (!data || data.length === 0) throw new Error('No questions received from the server.');
+      
       setQuestions(data);
+      // <-- 5. START TIMER ON SUCCESS -->
+      setTime(0);
+      setTimerOn(true);
       setGameState('in-progress');
+
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -108,25 +139,29 @@ function App() {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prevIndex => prevIndex + 1);
     } else {
+      // <-- 6. STOP TIMER ON QUIZ FINISH -->
+      setTimerOn(false);
       setGameState('finished');
     }
   };
-
+  
+  // <-- 7. UPDATE RESET FUNCTION -->
   const resetQuizState = (keepSelection = false) => {
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     setScore(0);
     setQuestions([]);
     setUserAnswers([]);
+    setTime(0);
+    setTimerOn(false);
     if (!keepSelection) {
       setSelectedCategory('');
       setSelectedDifficulty('');
     }
   };
 
-  // --- NEW HANDLER ---
   const handleRegenerateQuiz = () => {
-    resetQuizState(true); // true keeps category and difficulty
+    resetQuizState(true); 
     fetchQuestions(selectedCategory, selectedDifficulty);
   };
 
@@ -135,7 +170,6 @@ function App() {
     resetQuizState();
   };
 
-  // --- UI Rendering Logic ---
 
   const renderCategorySelector = () => (
     <div className="text-center px-4">
@@ -148,10 +182,10 @@ function App() {
             key={category}
             onClick={() => handleCategorySelect(category)}
             className="p-5 rounded-2xl bg-white/70 backdrop-blur-lg shadow-md 
-                     border border-gray-200 text-gray-800 font-semibold
-                     hover:shadow-xl hover:scale-105 hover:bg-indigo-600 hover:text-white
-                     focus:outline-none focus:ring-2 focus:ring-indigo-400 
-                     transition-all duration-300 ease-in-out"
+                       border border-gray-200 text-gray-800 font-semibold
+                       hover:shadow-xl hover:scale-105 hover:bg-indigo-600 hover:text-white
+                       focus:outline-none focus:ring-2 focus:ring-indigo-400 
+                       transition-all duration-300 ease-in-out"
           >
             {category}
           </button>
@@ -163,7 +197,6 @@ function App() {
 
   const renderDifficultySelector = () => (
     <div className="text-center px-4">
-      {/* Back button */}
       <button
         onClick={() => setGameState("category-select")}
         className="text-indigo-600 hover:text-indigo-800 hover:underline mb-6 text-sm font-medium transition-colors"
@@ -171,23 +204,21 @@ function App() {
         &larr; Back to Categories
       </button>
 
-      {/* Heading */}
       <h2 className="text-3xl font-extrabold text-gray-900 mb-6 tracking-tight">
         Step 2: <span className="text-green-600">Choose Difficulty</span> for{" "}
         <span className="text-indigo-600">{selectedCategory}</span>
       </h2>
 
-      {/* Difficulty buttons */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
         {difficulties.map((level) => (
           <button
             key={level}
             onClick={() => handleDifficultySelect(level)}
             className="p-5 rounded-2xl bg-white/70 backdrop-blur-lg shadow-md 
-                     border border-gray-200 text-gray-800 font-semibold uppercase
-                     hover:shadow-xl hover:scale-105 hover:bg-green-600 hover:text-white
-                     focus:outline-none focus:ring-2 focus:ring-green-400 
-                     transition-all duration-300 ease-in-out"
+                       border border-gray-200 text-gray-800 font-semibold uppercase
+                       hover:shadow-xl hover:scale-105 hover:bg-green-600 hover:text-white
+                       focus:outline-none focus:ring-2 focus:ring-green-400 
+                       transition-all duration-300 ease-in-out"
           >
             {level}
           </button>
@@ -199,25 +230,18 @@ function App() {
 
   const renderLoading = () => (
     <div className="flex flex-col items-center justify-center min-h-[300px] p-8">
-      {/* Animated Gradient Spinner */}
       <div className="relative w-16 h-16 mb-6">
         <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin"></div>
         <div className="absolute inset-2 rounded-full bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-pulse"></div>
       </div>
-
-      {/* Smooth Loading Text */}
       <p className="text-xl font-semibold text-gray-800 animate-pulse text-center">
         Preparing your{" "}
         <span className="text-blue-600 font-bold">{selectedDifficulty}</span>{" "}
         <span className="text-purple-600 font-bold">{selectedCategory}</span> quiz...
       </p>
-
-      {/* Progress Indicator */}
       <div className="mt-6 w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
         <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 animate-[progress_2s_linear_infinite]"></div>
       </div>
-
-      {/* Keyframes for smooth bar movement */}
       <style>{`
       @keyframes progress {
         0% { transform: translateX(-100%); }
@@ -231,7 +255,6 @@ function App() {
 
   const renderError = () => (
     <div className="flex flex-col items-center justify-center p-10 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl shadow-lg border border-red-200 animate-fade-in">
-      {/* Error Icon */}
       <div className="mb-4">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -244,17 +267,12 @@ function App() {
         </svg>
       </div>
 
-      {/* Title */}
       <h2 className="text-3xl font-extrabold text-red-700 mb-3">
         Oops! Something Went Wrong
       </h2>
-
-      {/* Error Message */}
       <p className="text-lg text-red-600 mb-6 text-center max-w-md">
         {error || "An unexpected error occurred. Please try again later."}
       </p>
-
-      {/* Action Button */}
       <button
         onClick={handleBackToMenu}
         className="px-8 py-3 bg-red-500 text-white font-semibold rounded-xl shadow-md hover:bg-red-600 hover:shadow-lg transition-all duration-300"
@@ -264,42 +282,41 @@ function App() {
     </div>
   );
 
-
+  
+  // <-- 8. UPDATE QUIZ RENDER TO DISPLAY TIMER -->
   const renderQuiz = () => {
     if (questions.length === 0) return null;
     const currentQuestion = questions[currentQuestionIndex];
 
     return (
       <div className="p-6 md:p-8 bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg transition-all duration-300">
-        {/* Stepper */}
         <Stepper current={currentQuestionIndex} total={questions.length} />
 
-        {/* Question Header */}
-        <div className="mb-6 text-center">
-          <p className="text-sm font-medium text-gray-500">
-            Topic:{" "}
-            <span className="text-indigo-600 font-semibold">
-              {selectedCategory}
-            </span>{" "}
-            (
-            <span className="text-green-600 font-semibold">
-              {selectedDifficulty}
-            </span>
-            )
-          </p>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mt-2 leading-snug">
+        <div className="mb-6">
+          <div className="flex justify-between items-center text-sm font-medium text-gray-500 mb-2">
+            <p>
+              Topic: <span className="text-indigo-600 font-semibold">{selectedCategory}</span> (<span className="text-green-600 font-semibold">{selectedDifficulty}</span>)
+            </p>
+            {/* Stopwatch Display */}
+            <div className="flex items-center text-base font-mono font-semibold bg-gray-100 text-gray-800 px-3 py-1 rounded-full shadow-inner">
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+               </svg>
+               <span>{formatTime(time)}</span>
+            </div>
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center leading-snug">
             {currentQuestion.question}
           </h2>
         </div>
 
-        {/* Options */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {currentQuestion.options.map((option, index) => (
             <button
               key={index}
               onClick={() => handleAnswerSelect(option)}
               className={`p-5 rounded-xl border text-left font-medium transition-all duration-300 ease-in-out
-              ${selectedAnswer === option
+               ${selectedAnswer === option
                   ? "bg-blue-600 text-white border-blue-600 shadow-lg scale-105 ring-2 ring-blue-300"
                   : "bg-white hover:bg-indigo-50 border-gray-300 text-gray-800 hover:shadow-md"
                 }`}
@@ -309,14 +326,13 @@ function App() {
           ))}
         </div>
 
-        {/* Next Button */}
         <div className="mt-10 text-center">
           <button
             onClick={handleNextQuestion}
             disabled={!selectedAnswer}
             className="w-full md:w-auto px-10 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md 
-                     hover:bg-indigo-700 hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed 
-                     transition-all duration-300"
+                       hover:bg-indigo-700 hover:shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed 
+                       transition-all duration-300"
           >
             {currentQuestionIndex < questions.length - 1
               ? "Next Question"
@@ -328,10 +344,9 @@ function App() {
   };
 
 
-  // --- UPDATED FINISHED SCREEN ---
+  // <-- 9. UPDATE FINISHED RENDER TO DISPLAY FINAL TIME -->
   const renderFinished = () => (
     <div className="flex flex-col items-center justify-center p-10 bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl animate-fade-in">
-      {/* Celebration Icon */}
       <div className="mb-6">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -344,12 +359,10 @@ function App() {
         </svg>
       </div>
 
-      {/* Title */}
       <h2 className="text-4xl font-extrabold text-gray-900 mb-3">
         🎉 Quiz Completed!
       </h2>
 
-      {/* Topic Info */}
       <p className="text-lg text-gray-600 mb-4">
         Topic:{" "}
         <span className="text-indigo-600 font-semibold">{selectedCategory}</span>{" "}
@@ -357,8 +370,17 @@ function App() {
         <span className="text-green-600 font-semibold">{selectedDifficulty}</span>
         )
       </p>
+      
+      {/* Final Time Display */}
+      <div className="flex items-center justify-center text-gray-700 mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-lg">
+            Time Taken: <span className="font-bold font-mono">{formatTime(time)}</span>
+          </p>
+      </div>
 
-      {/* Score Card */}
       <div className="bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-bold py-6 px-10 rounded-2xl shadow-lg mb-8 transform transition-all duration-500 hover:scale-105">
         <p className="text-xl">Your Final Score</p>
         <p className="text-4xl mt-2">
@@ -366,7 +388,6 @@ function App() {
         </p>
       </div>
 
-      {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <button
           onClick={() => setGameState("review")}
@@ -388,7 +409,6 @@ function App() {
         </button>
       </div>
 
-      {/* Fade-in Animation */}
       <style>{`
       @keyframes fade-in {
         from { opacity: 0; transform: translateY(20px); }
@@ -404,13 +424,11 @@ function App() {
 
   const renderReview = () => (
     <div className="p-6 md:p-8 bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg">
-      {/* Title */}
       <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-8 text-gray-900">
         📝 Answer Review:{" "}
         <span className="text-indigo-600">{selectedCategory}</span>
       </h2>
 
-      {/* Scrollable Questions */}
       <div className="space-y-6 max-h-[65vh] overflow-y-auto pr-3 custom-scrollbar">
         {questions.map((q, index) => {
           const userAnswer = userAnswers[index];
@@ -419,12 +437,10 @@ function App() {
               key={index}
               className="p-5 border rounded-xl bg-gray-50 shadow-sm hover:shadow-md transition-all duration-300"
             >
-              {/* Question */}
               <p className="font-semibold text-lg text-gray-800 mb-3">
                 {index + 1}. {q.question}
               </p>
 
-              {/* Options */}
               <div className="space-y-2">
                 {q.options.map((option) => {
                   const isCorrectAnswer = option === q.correctAnswer;
@@ -464,7 +480,6 @@ function App() {
         })}
       </div>
 
-      {/* Back Button */}
       <div className="mt-8 text-center">
         <button
           onClick={() => setGameState("finished")}
@@ -474,7 +489,6 @@ function App() {
         </button>
       </div>
 
-      {/* Custom scrollbar */}
       <style>{`
       .custom-scrollbar::-webkit-scrollbar {
         width: 8px;
@@ -516,4 +530,3 @@ function App() {
 }
 
 export default App;
-
