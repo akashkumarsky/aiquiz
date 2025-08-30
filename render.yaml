@@ -1,5 +1,4 @@
-# render.yaml - Configuration file for deploying to Render
-# This file defines two services: the Spring Boot backend and the React frontend.
+# render.yaml - Tells Render how to deploy both services from one repository.
 
 services:
   # -----------------
@@ -7,35 +6,34 @@ services:
   # -----------------
   - type: web
     name: ai-quiz-backend
-    # Explicitly set the runtime to Java
+    # This is the crucial part: we explicitly tell Render this is a Java service.
     runtime: java
-    # Set the root directory for this service
+    # Tells Render to look inside the 'ai-quiz' folder for this service.
     rootDir: ai-quiz
-    plan: free
+    plan: free # This uses the free instance type
+    # Build and start commands for a Spring Boot application.
     buildCommand: "./mvnw clean install"
     startCommand: "java -jar target/ai-quiz-0.0.1-SNAPSHOT.jar"
     envVars:
       - key: GOOGLE_API_KEY
-        # This tells Render to get the key from your account's secret store
-        fromSecret: GOOGLE_API_KEY
-      # Set the server port, matching your application.properties
-      - key: PORT
-        value: 8081
+        # IMPORTANT: This will sync from a secret you create in the Render dashboard.
+        fromGroup: api-keys 
 
   # -----------------
   # React Frontend Service
   # -----------------
   - type: web
     name: quiz-frontend
-    # Explicitly set the runtime to Node
+    # Explicitly tell Render this is a Node.js service.
     runtime: node
-    # Set the root directory for this service
+    # Tells Render to look inside the 'quiz-frontend' folder.
     rootDir: quiz-frontend
     plan: free
     buildCommand: "npm install && npm run build"
-    # The directory where the built static files are located
+    # The folder where Vite places the final website files.
     publishDirectory: dist
     envVars:
       - key: VITE_API_BASE_URL
-        # This special value automatically uses the URL of your deployed backend
+        # This powerful feature automatically uses the live URL of your backend.
         value: https://${ai-quiz-backend.host}/api
+
